@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grand Luxury Interactive Christmas Tree</title>
-  <!-- 调整 CDN 加载顺序，确保依赖优先加载，修复 ReactThreeFiber 未定义问题 -->
+  <!-- 正确排序CDN，先依赖后上层库，避免未定义 -->
   <script src="https://unpkg.com/three@0.182.0/build/three.min.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,44 +13,49 @@
   <script src="https://unpkg.com/@react-three/postprocessing@3.0.4/dist/umd/index.min.js"></script>
   <!-- 字体引入 -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
-  <!-- 完全移除 Tailwind CDN，用原生 CSS 替代所有样式，消除生产环境警告 -->
+  <!-- 完全移除Tailwind CDN，用纯CSS替代所有样式 -->
   <style>
-    /* 基础样式 */
-    body { 
-      margin: 0; 
-      padding: 0; 
-      background-color: #001a0f; 
-      overflow: hidden; 
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #001a0f;
+      overflow: hidden;
       font-family: 'Lato', sans-serif;
     }
-    .font-display { 
-      font-family: 'Playfair Display', serif; 
+    #root {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    #root { 
-      width: 100vw; 
-      height: 100vh; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-    }
-    /* 切换按钮样式（替代 Tailwind） */
-    .toggle-btn {
-      padding: 0.75rem 1.5rem;
+    /* 切换按钮样式（替代Tailwind） */
+    .toggle-button {
+      padding: 12px 24px;
       background-color: #15803d;
-      color: #ffffff;
+      color: #fff;
       border: none;
-      border-radius: 0.5rem;
+      border-radius: 8px;
       font-family: 'Playfair Display', serif;
-      font-size: 1rem;
+      font-size: 16px;
       cursor: pointer;
-      transition: background-color 0.2s ease-in-out;
-      outline: none;
+      transition: background-color 0.2s ease;
     }
-    .toggle-btn:hover {
+    .toggle-button:hover {
       background-color: #16a34a;
     }
-    .toggle-btn:active {
+    .toggle-button:active {
       background-color: #1e40af;
+    }
+    /* 加载失败提示样式 */
+    .error-tip {
+      color: #fff;
+      text-align: center;
+      font-size: 18px;
+      padding: 20px;
     }
   </style>
 </head>
@@ -58,17 +63,26 @@
   <div id="root"></div>
 
   <script>
-    // 等待所有 CDN 加载完成后执行，避免未定义问题
+    // 等待所有CDN加载完成再执行，避免未定义
     window.addEventListener('load', function() {
-      // 解构所有需要的 API，增加容错判断
-      const { useState, useRef, Fragment, StrictMode } = React;
-      const R3F = window.ReactThreeFiber || {};
-      const { Canvas, useFrame } = R3F;
-      const R3Drei = window.ReactThreeDrei || {};
-      const { OrbitControls, Environment, Stars, Sparkles, Html } = R3Drei;
-      const R3Post = window.ReactThreePostprocessing || {};
-      const { EffectComposer, Bloom, Vignette, Noise } = R3Post;
+      // 解构API并增加容错
+      const ReactLib = window.React;
+      const ReactDOMLib = window.ReactDOM;
       const THREE = window.THREE || {};
+      const R3F = window.ReactThreeFiber || {};
+      const R3Drei = window.ReactThreeDrei || {};
+      const R3Post = window.ReactThreePostprocessing || {};
+
+      if (!ReactLib || !ReactDOMLib || !R3F.Canvas) {
+        const root = document.getElementById('root');
+        root.innerHTML = '<div class="error-tip">3D组件加载失败，请刷新页面重试</div>';
+        return;
+      }
+
+      const { useState, useRef, Fragment, StrictMode } = ReactLib;
+      const { Canvas, useFrame } = R3F;
+      const { OrbitControls, Environment, Stars, Sparkles, Html } = R3Drei;
+      const { EffectComposer, Bloom, Vignette, Noise } = R3Post;
 
       // 常量配置
       const COLORS = {
@@ -87,28 +101,28 @@
         CHAOS: "chaos"
       };
 
-      // 兔子组件（用 React.createElement 替代 JSX）
-      const Rabbit = ({ scale, isTopper }) => {
-        return React.createElement(
+      // 兔子组件（纯React.createElement，无JSX）
+      const Rabbit = ({ scale }) => {
+        return ReactLib.createElement(
           "group",
           { scale: scale || 1 },
-          React.createElement(
+          ReactLib.createElement(
             "mesh",
             { position: [0, 0, 0] },
-            React.createElement("sphereGeometry", { args: [0.5, 32, 32] }),
-            React.createElement("meshStandardMaterial", { color: "#ffffff" })
+            ReactLib.createElement("sphereGeometry", { args: [0.5, 32, 32] }),
+            ReactLib.createElement("meshStandardMaterial", { color: "#ffffff" })
           ),
-          React.createElement(
+          ReactLib.createElement(
             "mesh",
             { position: [0.3, 0.3, 0.2] },
-            React.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
-            React.createElement("meshStandardMaterial", { color: "#000000" })
+            ReactLib.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
+            ReactLib.createElement("meshStandardMaterial", { color: "#000000" })
           ),
-          React.createElement(
+          ReactLib.createElement(
             "mesh",
             { position: [-0.3, 0.3, 0.2] },
-            React.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
-            React.createElement("meshStandardMaterial", { color: "#000000" })
+            ReactLib.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
+            ReactLib.createElement("meshStandardMaterial", { color: "#000000" })
           )
         );
       };
@@ -118,7 +132,6 @@
         const ref = useRef();
         const particlesRef = useRef();
 
-        // 兼容 useFrame 未定义的情况
         if (useFrame) {
           useFrame(({ clock }) => {
             if (!ref.current || !particlesRef.current) return;
@@ -133,22 +146,22 @@
           });
         }
 
-        return React.createElement(
+        return ReactLib.createElement(
           "group",
           { ref: ref },
-          React.createElement(
+          ReactLib.createElement(
             "points",
             { ref: particlesRef },
-            React.createElement(
+            ReactLib.createElement(
               "bufferGeometry",
               null,
-              React.createElement("bufferAttribute", {
+              ReactLib.createElement("bufferAttribute", {
                 count: CONFIG.particleCount,
                 array: new Float32Array(CONFIG.particleCount * 3),
                 itemSize: 3
               })
             ),
-            React.createElement("pointsMaterial", {
+            ReactLib.createElement("pointsMaterial", {
               color: COLORS.emerald,
               size: 0.05,
               transparent: true,
@@ -164,9 +177,9 @@
         const groupRef = useRef(null);
         const targetY = CONFIG.treeHeight / 2 + 0.2;
 
-        if (useFrame && THREE.MathUtils) {
+        if (useFrame && THREE.MathUtils && THREE.Vector3) {
           useFrame((stateThree, delta) => {
-            if (!groupRef.current || !stateThree?.clock) return;
+            if (!groupRef.current || !stateThree.clock) return;
 
             const target = state === TreeState.FORMED
               ? new THREE.Vector3(0, targetY, 0)
@@ -191,14 +204,14 @@
           });
         }
 
-        return React.createElement(
+        return ReactLib.createElement(
           "group",
           { ref: groupRef },
-          React.createElement(Rabbit, { scale: 0.8, isTopper: true })
+          ReactLib.createElement(Rabbit, { scale: 0.8 })
         );
       };
 
-      // 核心体验组件
+      // 核心体验组件（修复OrbitControls属性写法，纯原生JS）
       const Experience = () => {
         const [treeState, setTreeState] = useState(TreeState.FORMED);
 
@@ -206,17 +219,20 @@
           setTreeState(prev => prev === TreeState.FORMED ? TreeState.CHAOS : TreeState.FORMED);
         };
 
-        // 兼容 Canvas 未定义的情况
-        if (!Canvas) {
-          return React.createElement("div", { style: { color: "white", textAlign: "center" } },
-            "3D 组件加载失败，请刷新页面重试"
-          );
-        }
+        // 构建OrbitControls属性（原生JS对象，避免JSX语法错误）
+        const orbitControlsProps = {
+          enablePan: false,
+          enableZoom: true,
+          minPolarAngle: Math.PI / 4,
+          maxPolarAngle: Math.PI / 1.8,
+          minDistance: 6,
+          maxDistance: 20
+        };
 
-        return React.createElement(
+        return ReactLib.createElement(
           Fragment,
           null,
-          React.createElement(
+          ReactLib.createElement(
             Canvas,
             {
               shadows: true,
@@ -224,20 +240,13 @@
               camera: { position: [0, 0, 12], fov: 45 },
               gl: { toneMapping: THREE.ReinhardToneMapping || 0, toneMappingExposure: 1.5 }
             },
-            React.createElement("color", { attach: "background", args: ['#001a0f'] }),
-            // 轨道控制器
-            OrbitControls ? React.createElement(OrbitControls, {
-              enablePan: false,
-              enableZoom: true,
-              minPolarAngle: Math.PI / 4,
-              maxPolarAngle: Math.PI / 1.8,
-              minDistance: 6,
-              maxDistance: 20
-            }) : null,
+            ReactLib.createElement("color", { attach: "background", args: ['#001a0f'] }),
+            // OrbitControls：传入纯JS对象属性，修复语法错误
+            OrbitControls ? ReactLib.createElement(OrbitControls, orbitControlsProps) : null,
             // 环境与灯光
-            Environment ? React.createElement(Environment, { preset: "city" }) : null,
-            React.createElement("ambientLight", { intensity: 0.2, color: COLORS.emerald }),
-            React.createElement("spotLight", {
+            Environment ? ReactLib.createElement(Environment, { preset: "city" }) : null,
+            ReactLib.createElement("ambientLight", { intensity: 0.2, color: COLORS.emerald }),
+            ReactLib.createElement("spotLight", {
               position: [10, 10, 10],
               angle: 0.15,
               penumbra: 1,
@@ -245,19 +254,19 @@
               castShadow: true,
               color: COLORS.champagne
             }),
-            React.createElement("pointLight", { position: [-10, -5, -10], intensity: 5, color: COLORS.emerald }),
-            React.createElement("pointLight", { position: [0, 5, 5], intensity: 2, color: COLORS.gold, distance: 10 }),
+            ReactLib.createElement("pointLight", { position: [-10, -5, -10], intensity: 5, color: COLORS.emerald }),
+            ReactLib.createElement("pointLight", { position: [0, 5, 5], intensity: 2, color: COLORS.gold, distance: 10 }),
             // 背景元素
-            Stars ? React.createElement(Stars, { radius: 100, depth: 50, count: 5000, factor: 4, saturation: 0, fade: true, speed: 1 }) : null,
+            Stars ? ReactLib.createElement(Stars, { radius: 100, depth: 50, count: 5000, factor: 4, saturation: 0, fade: true, speed: 1 }) : null,
             // 圣诞树
-            React.createElement(
+            ReactLib.createElement(
               "group",
               { position: [0, -1, 0] },
-              React.createElement(TreeParticles, { state: treeState }),
-              React.createElement(TreeTopper, { state: treeState })
+              ReactLib.createElement(TreeParticles, { state: treeState }),
+              ReactLib.createElement(TreeTopper, { state: treeState })
             ),
             // 特效
-            Sparkles ? React.createElement(Sparkles, {
+            Sparkles ? ReactLib.createElement(Sparkles, {
               count: 200,
               scale: 12,
               size: 4,
@@ -266,11 +275,11 @@
               color: COLORS.gold
             }) : null,
             // 地面反射
-            React.createElement(
+            ReactLib.createElement(
               "mesh",
               { rotation: [-Math.PI / 2, 0, 0], position: [0, -4, 0] },
-              React.createElement("planeGeometry", { args: [100, 100] }),
-              React.createElement("meshStandardMaterial", {
+              ReactLib.createElement("planeGeometry", { args: [100, 100] }),
+              ReactLib.createElement("meshStandardMaterial", {
                 color: "#001a0f",
                 roughness: 0,
                 metalness: 0.5,
@@ -279,31 +288,31 @@
               })
             ),
             // 后期处理
-            EffectComposer ? React.createElement(
+            EffectComposer ? ReactLib.createElement(
               EffectComposer,
               { disableNormalPass: true },
-              React.createElement(Bloom, {
+              ReactLib.createElement(Bloom, {
                 luminanceThreshold: 0.8,
                 mipmapBlur: true,
                 intensity: 1.2,
                 radius: 0.6
               }),
-              React.createElement(Vignette, { eskil: false, offset: 0.1, darkness: 1.1 }),
-              React.createElement(Noise, { opacity: 0.02 })
+              ReactLib.createElement(Vignette, { eskil: false, offset: 0.1, darkness: 1.1 }),
+              ReactLib.createElement(Noise, { opacity: 0.02 })
             ) : null
           ),
           // 切换按钮
-          Html ? React.createElement(Html, { position: [0, -3, 0], transform: true },
-            React.createElement("button", {
+          Html ? ReactLib.createElement(Html, { position: [0, -3, 0], transform: true },
+            ReactLib.createElement("button", {
               onClick: onToggle,
-              className: "toggle-btn"
+              className: "toggle-button"
             },
             treeState === TreeState.FORMED ? "切换为混乱状态" : "切换为树形状态"
             )
-          ) : React.createElement("button", {
+          ) : ReactLib.createElement("button", {
             onClick: onToggle,
-            className: "toggle-btn",
-            style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, 50%)" }
+            className: "toggle-button",
+            style: { position: "absolute", top: "55%", left: "50%", transform: "translate(-50%, 0)" }
           },
             treeState === TreeState.FORMED ? "切换为混乱状态" : "切换为树形状态"
           )
@@ -312,14 +321,12 @@
 
       // 渲染组件
       const rootElement = document.getElementById('root');
-      if (ReactDOM.createRoot && rootElement) {
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(
-          React.createElement(StrictMode, null,
-            React.createElement(Experience, null)
-          )
-        );
-      }
+      const root = ReactDOMLib.createRoot(rootElement);
+      root.render(
+        ReactLib.createElement(StrictMode, null,
+          ReactLib.createElement(Experience, null)
+        )
+      );
     });
   </script>
 </body>
