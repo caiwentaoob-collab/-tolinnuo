@@ -42,13 +42,18 @@ jobs:
         run: npm run build
 
 
-      - name: Setup Pages
+      # 步骤1：初始化GitHub Pages（官方步骤，必需）
+      - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload artifact
+        # 改动1：删除第三方部署步骤，保留官方步骤
+
+      # 步骤2：上传构建产物（修正path为./dist）
+      - name: Upload build artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          path: './dist' # 改动2：将路径从 '.' 改为 './dist'，只上传构建后的静态文件
+
+      # 步骤3：部署到GitHub Pages（官方最终部署步骤）
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
