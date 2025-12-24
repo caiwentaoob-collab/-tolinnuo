@@ -1,33 +1,120 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Grand Luxury Interactive Christmas Tree</title>
+    <!-- 保留Tailwind CDN用于快速调试，生产环境可替换为本地构建 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    <!-- 替换React importmap为UMD CDN，无需编译，浏览器直接识别 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/three@0.182.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/@react-three/fiber@9.4.2/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/@react-three/drei@10.7.7/dist/umd/index.min.js"></script>
     <style>
       body { margin: 0; padding: 0; background-color: #001a0f; overflow: hidden; }
       .font-display { font-family: 'Playfair Display', serif; }
       .font-body { font-family: 'Lato', sans-serif; }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "three": "https://esm.sh/three@^0.182.0",
-    "@react-three/drei": "https://esm.sh/@react-three/drei@^10.7.7",
-    "@react-three/fiber": "https://esm.sh/@react-three/fiber@^9.4.2",
-    "@react-three/postprocessing": "https://esm.sh/@react-three/postprocessing@^3.0.4"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+    <!-- Tailwind配置（保持原有字体样式） -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['Playfair Display', 'serif'],
+              body: ['Lato', 'sans-serif'],
+            },
+          },
+        }
+      }
+    </script>
+    <!-- 移除index.css绝对路径引用，如需自定义样式直接写在style标签内或改用相对路径 -->
+    <style>
+      /* 如需自定义CSS，直接写在这里即可，无需额外引用index.css（避免文件找不到报错） */
+      .christmas-tree-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tree-title {
+        position: absolute;
+        top: 2rem;
+        color: #fff;
+        text-align: center;
+        z-index: 10;
+      }
+    </style>
+  </head>
   <body>
-    <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <div id="root" class="christmas-tree-container"></div>
+
+    <!-- 替换TSX为JSX（浏览器直接执行，无需编译） -->
+    <script type="text/javascript">
+      // 解构React和React Three Fiber相关API
+      const { useState, useEffect } = React;
+      const { Canvas } = window.ReactThreeFiber;
+      const { OrbitControls, Tree, PointLight } = window.ReactThreeDrei;
+
+      // 圣诞树人组件
+      const ChristmasTree = () => {
+        const [isHovered, setIsHovered] = useState(false);
+
+        return (
+          <>
+            {/* 轨道控制器，允许拖拽旋转、滚轮缩放 */}
+            <OrbitControls enableZoom={true} enablePan={false} />
+            
+            {/* 环境光 */}
+            <ambientLight intensity={0.3} color="#ffffff" />
+            
+            {/* 点光源（模拟圣诞灯） */}
+            <PointLight 
+              position={[2, 5, 3]} 
+              color={isHovered ? "#ff00ff" : "#00ff00"} 
+              intensity={1.5} 
+              distance={10}
+            />
+            <PointLight 
+              position={[-3, 4, -2]} 
+              color={isHovered ? "#00ffff" : "#ff9900"} 
+              intensity={1.2} 
+              distance={10}
+            />
+
+            {/* 圣诞树主体 */}
+            <Tree
+              position={[0, 0, 0]}
+              scale={isHovered ? 1.1 : 1}
+              onPointerOver={() => setIsHovered(true)}
+              onPointerOut={() => setIsHovered(false)}
+              color="#228B22"
+              trunkColor="#8B4513"
+            />
+
+            {/* 标题 */}
+            <div className="tree-title font-display">
+              <h1 className="text-4xl md:text-5xl font-bold mb-2">Grand Luxury Christmas Tree</h1>
+              <p className="font-body text-xl text-gray-200">Hover over the tree to animate it</p>
+            </div>
+          </>
+        );
+      };
+
+      // 渲染组件到页面
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(
+        <React.StrictMode>
+          <Canvas camera={{ position: [0, 2, 8], fov: 50 }}>
+            <ChristmasTree />
+          </Canvas>
+        </React.StrictMode>
+      );
+    </script>
+  </body>
 </html>
+
