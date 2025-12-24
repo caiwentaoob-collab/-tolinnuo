@@ -71,8 +71,7 @@ export const Experience: React.FC<ExperienceProps> = ({ treeState, onToggle }) =
       
       {/* --- Controls --- */}
       <OrbitControls 
-        enablePan={false}
-        enableZoom={true}  // 修复可能的语法错误
+        enablePan={false} 
         minPolarAngle={Math.PI / 4} 
         maxPolarAngle={Math.PI / 1.8}
         minDistance={6}
