@@ -51,7 +51,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist' # 改动2：将路径从 '.' 改为 './dist'，只上传构建后的静态文件
+          path: '.' 
 
       # 步骤3：部署到GitHub Pages（官方最终部署步骤）
       - name: Deploy to GitHub Pages
