@@ -1,6 +1,11 @@
+// index.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import Experience from './components/Experience';
+
+// 修复点4：React 入口必须写在 TSX 文件中，由 Vite 编译
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+root.render(<Experience />);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
