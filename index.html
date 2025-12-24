@@ -4,292 +4,323 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grand Luxury Interactive Christmas Tree</title>
-  <!-- 引入所需CDN（确保浏览器兼容） -->
+  <!-- 调整 CDN 加载顺序，确保依赖优先加载，修复 ReactThreeFiber 未定义问题 -->
+  <script src="https://unpkg.com/three@0.182.0/build/three.min.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/three@0.182.0/build/three.min.js"></script>
   <script src="https://unpkg.com/@react-three/fiber@9.4.2/dist/umd/index.min.js"></script>
   <script src="https://unpkg.com/@react-three/drei@10.7.7/dist/umd/index.min.js"></script>
   <script src="https://unpkg.com/@react-three/postprocessing@3.0.4/dist/umd/index.min.js"></script>
-  <!-- 改用Tailwind兼容CDN（消除未定义报错，生产环境临时可用） -->
-  <script src="https://cdn.tailwindcss.com"></script>
   <!-- 字体引入 -->
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
-  <!-- 内嵌所有样式（替代index.css，避免404） -->
+  <!-- 完全移除 Tailwind CDN，用原生 CSS 替代所有样式，消除生产环境警告 -->
   <style>
     /* 基础样式 */
-    body { margin: 0; padding: 0; background-color: #001a0f; overflow: hidden; }
-    .font-display { font-family: 'Playfair Display', serif; }
-    .font-body { font-family: 'Lato', sans-serif; }
-    #root { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-    /* 按钮样式（替代Tailwind类，避免兼容问题） */
+    body { 
+      margin: 0; 
+      padding: 0; 
+      background-color: #001a0f; 
+      overflow: hidden; 
+      font-family: 'Lato', sans-serif;
+    }
+    .font-display { 
+      font-family: 'Playfair Display', serif; 
+    }
+    #root { 
+      width: 100vw; 
+      height: 100vh; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    /* 切换按钮样式（替代 Tailwind） */
     .toggle-btn {
       padding: 0.75rem 1.5rem;
       background-color: #15803d;
-      color: white;
+      color: #ffffff;
+      border: none;
       border-radius: 0.5rem;
       font-family: 'Playfair Display', serif;
+      font-size: 1rem;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: background-color 0.2s ease-in-out;
+      outline: none;
     }
     .toggle-btn:hover {
       background-color: #16a34a;
     }
-  </style>
-  <!-- Tailwind配置（放在CDN之后，避免未定义） -->
-  <script>
-    if (typeof tailwind !== 'undefined') {
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              display: ['Playfair Display', 'serif'],
-              body: ['Lato', 'sans-serif'],
-            },
-          },
-        }
-      }
+    .toggle-btn:active {
+      background-color: #1e40af;
     }
-  </script>
+  </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script>
-    // 解构所有需要的API
-    const { useState, useRef } = React;
-    const { Canvas, useFrame } = window.ReactThreeFiber;
-    const { OrbitControls, Environment, Stars, Sparkles, Html } = window.ReactThreeDrei;
-    const { EffectComposer, Bloom, Vignette, Noise } = window.ReactThreePostprocessing;
-    const THREE = window.THREE;
+    // 等待所有 CDN 加载完成后执行，避免未定义问题
+    window.addEventListener('load', function() {
+      // 解构所有需要的 API，增加容错判断
+      const { useState, useRef, Fragment, StrictMode } = React;
+      const R3F = window.ReactThreeFiber || {};
+      const { Canvas, useFrame } = R3F;
+      const R3Drei = window.ReactThreeDrei || {};
+      const { OrbitControls, Environment, Stars, Sparkles, Html } = R3Drei;
+      const R3Post = window.ReactThreePostprocessing || {};
+      const { EffectComposer, Bloom, Vignette, Noise } = R3Post;
+      const THREE = window.THREE || {};
 
-    // 常量配置
-    const COLORS = {
-      emerald: "#008000",
-      champagne: "#F7E7CE",
-      gold: "#FFD700"
-    };
-    const CONFIG = {
-      treeHeight: 8,
-      particleCount: 5000
-    };
-
-    // 树形状态
-    const TreeState = {
-      FORMED: "formed",
-      CHAOS: "chaos"
-    };
-
-    // 兔子组件（用React.createElement替代JSX，避免语法报错）
-    const Rabbit = ({ scale, isTopper }) => {
-      return React.createElement(
-        "group",
-        { scale: scale || 1 },
-        React.createElement(
-          "mesh",
-          { position: [0, 0, 0] },
-          React.createElement("sphereGeometry", { args: [0.5, 32, 32] }),
-          React.createElement("meshStandardMaterial", { color: "#ffffff" })
-        ),
-        React.createElement(
-          "mesh",
-          { position: [0.3, 0.3, 0.2] },
-          React.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
-          React.createElement("meshStandardMaterial", { color: "#000000" })
-        ),
-        React.createElement(
-          "mesh",
-          { position: [-0.3, 0.3, 0.2] },
-          React.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
-          React.createElement("meshStandardMaterial", { color: "#000000" })
-        )
-      );
-    };
-
-    // 树粒子组件（用React.createElement替代JSX）
-    const TreeParticles = ({ state }) => {
-      const ref = useRef();
-      const particlesRef = useRef();
-
-      useFrame(({ clock }) => {
-        if (!ref.current || !particlesRef.current) return;
-
-        const time = clock.elapsedTime;
-        if (state === TreeState.FORMED) {
-          particlesRef.current.rotation.y += 0.005;
-        } else {
-          particlesRef.current.rotation.x = Math.sin(time * 0.5) * 0.2;
-          particlesRef.current.rotation.z = Math.cos(time * 0.5) * 0.2;
-        }
-      });
-
-      return React.createElement(
-        "group",
-        { ref: ref },
-        React.createElement(
-          "points",
-          { ref: particlesRef },
-          React.createElement(
-            "bufferGeometry",
-            null,
-            React.createElement("bufferAttribute", {
-              count: CONFIG.particleCount,
-              array: new Float32Array(CONFIG.particleCount * 3),
-              itemSize: 3
-            })
-          ),
-          React.createElement("pointsMaterial", {
-            color: COLORS.emerald,
-            size: 0.05,
-            transparent: true,
-            opacity: 0.8,
-            sizeAttenuation: true
-          })
-        )
-      );
-    };
-
-    // 树顶组件（用React.createElement替代JSX）
-    const TreeTopper = ({ state }) => {
-      const groupRef = useRef(null);
-      const targetY = CONFIG.treeHeight / 2 + 0.2;
-
-      useFrame((stateThree, delta) => {
-        if (!groupRef.current) return;
-
-        const target = state === TreeState.FORMED
-          ? new THREE.Vector3(0, targetY, 0)
-          : new THREE.Vector3(
-              Math.sin(stateThree.clock.elapsedTime) * 5,
-              5 + Math.cos(stateThree.clock.elapsedTime * 0.5) * 2,
-              Math.cos(stateThree.clock.elapsedTime) * 5
-            );
-
-        groupRef.current.position.lerp(target, delta * 2);
-
-        if (state === TreeState.FORMED) {
-          groupRef.current.rotation.y += delta * 0.5;
-          groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, delta);
-          groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, delta);
-        } else {
-          groupRef.current.rotation.x += delta;
-          groupRef.current.rotation.z += delta;
-        }
-      });
-
-      return React.createElement(
-        "group",
-        { ref: groupRef },
-        React.createElement(Rabbit, { scale: 0.8, isTopper: true })
-      );
-    };
-
-    // 核心体验组件（用React.createElement替代JSX）
-    const Experience = () => {
-      const [treeState, setTreeState] = useState(TreeState.FORMED);
-
-      const onToggle = () => {
-        setTreeState(prev => prev === TreeState.FORMED ? TreeState.CHAOS : TreeState.FORMED);
+      // 常量配置
+      const COLORS = {
+        emerald: "#008000",
+        champagne: "#F7E7CE",
+        gold: "#FFD700"
+      };
+      const CONFIG = {
+        treeHeight: 8,
+        particleCount: 5000
       };
 
-      return React.createElement(
-        React.Fragment,
-        null,
-        React.createElement(
-          Canvas,
-          {
-            shadows: true,
-            dpr: [1, 2],
-            camera: { position: [0, 0, 12], fov: 45 },
-            gl: { toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.5 }
-          },
-          React.createElement("color", { attach: "background", args: ['#001a0f'] }),
-          // 轨道控制器
-          React.createElement(OrbitControls, {
-            enablePan: false,
-            enableZoom: true,
-            minPolarAngle: Math.PI / 4,
-            maxPolarAngle: Math.PI / 1.8,
-            minDistance: 6,
-            maxDistance: 20
-          }),
-          // 环境与灯光
-          React.createElement(Environment, { preset: "city" }),
-          React.createElement("ambientLight", { intensity: 0.2, color: COLORS.emerald }),
-          React.createElement("spotLight", {
-            position: [10, 10, 10],
-            angle: 0.15,
-            penumbra: 1,
-            intensity: 2,
-            castShadow: true,
-            color: COLORS.champagne
-          }),
-          React.createElement("pointLight", { position: [-10, -5, -10], intensity: 5, color: COLORS.emerald }),
-          React.createElement("pointLight", { position: [0, 5, 5], intensity: 2, color: COLORS.gold, distance: 10 }),
-          // 背景元素
-          React.createElement(Stars, { radius: 100, depth: 50, count: 5000, factor: 4, saturation: 0, fade: true, speed: 1 }),
-          // 圣诞树
-          React.createElement(
-            "group",
-            { position: [0, -1, 0] },
-            React.createElement(TreeParticles, { state: treeState }),
-            React.createElement(TreeTopper, { state: treeState })
-          ),
-          // 特效
-          React.createElement(Sparkles, {
-            count: 200,
-            scale: 12,
-            size: 4,
-            speed: 0.4,
-            opacity: 0.5,
-            color: COLORS.gold
-          }),
-          // 地面反射
+      // 树形状态
+      const TreeState = {
+        FORMED: "formed",
+        CHAOS: "chaos"
+      };
+
+      // 兔子组件（用 React.createElement 替代 JSX）
+      const Rabbit = ({ scale, isTopper }) => {
+        return React.createElement(
+          "group",
+          { scale: scale || 1 },
           React.createElement(
             "mesh",
-            { rotation: [-Math.PI / 2, 0, 0], position: [0, -4, 0] },
-            React.createElement("planeGeometry", { args: [100, 100] }),
-            React.createElement("meshStandardMaterial", {
-              color: "#001a0f",
-              roughness: 0,
-              metalness: 0.5,
-              transparent: true,
-              opacity: 0.8
-            })
+            { position: [0, 0, 0] },
+            React.createElement("sphereGeometry", { args: [0.5, 32, 32] }),
+            React.createElement("meshStandardMaterial", { color: "#ffffff" })
           ),
-          // 后期处理
           React.createElement(
-            EffectComposer,
-            { disableNormalPass: true },
-            React.createElement(Bloom, {
-              luminanceThreshold: 0.8,
-              mipmapBlur: true,
-              intensity: 1.2,
-              radius: 0.6
-            }),
-            React.createElement(Vignette, { eskil: false, offset: 0.1, darkness: 1.1 }),
-            React.createElement(Noise, { opacity: 0.02 })
+            "mesh",
+            { position: [0.3, 0.3, 0.2] },
+            React.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
+            React.createElement("meshStandardMaterial", { color: "#000000" })
+          ),
+          React.createElement(
+            "mesh",
+            { position: [-0.3, 0.3, 0.2] },
+            React.createElement("sphereGeometry", { args: [0.1, 16, 16] }),
+            React.createElement("meshStandardMaterial", { color: "#000000" })
           )
-        ),
-        // 切换按钮
-        React.createElement(Html, { position: [0, -3, 0], transform: true },
-          React.createElement("button", {
+        );
+      };
+
+      // 树粒子组件
+      const TreeParticles = ({ state }) => {
+        const ref = useRef();
+        const particlesRef = useRef();
+
+        // 兼容 useFrame 未定义的情况
+        if (useFrame) {
+          useFrame(({ clock }) => {
+            if (!ref.current || !particlesRef.current) return;
+
+            const time = clock.elapsedTime;
+            if (state === TreeState.FORMED) {
+              particlesRef.current.rotation.y += 0.005;
+            } else {
+              particlesRef.current.rotation.x = Math.sin(time * 0.5) * 0.2;
+              particlesRef.current.rotation.z = Math.cos(time * 0.5) * 0.2;
+            }
+          });
+        }
+
+        return React.createElement(
+          "group",
+          { ref: ref },
+          React.createElement(
+            "points",
+            { ref: particlesRef },
+            React.createElement(
+              "bufferGeometry",
+              null,
+              React.createElement("bufferAttribute", {
+                count: CONFIG.particleCount,
+                array: new Float32Array(CONFIG.particleCount * 3),
+                itemSize: 3
+              })
+            ),
+            React.createElement("pointsMaterial", {
+              color: COLORS.emerald,
+              size: 0.05,
+              transparent: true,
+              opacity: 0.8,
+              sizeAttenuation: true
+            })
+          )
+        );
+      };
+
+      // 树顶组件
+      const TreeTopper = ({ state }) => {
+        const groupRef = useRef(null);
+        const targetY = CONFIG.treeHeight / 2 + 0.2;
+
+        if (useFrame && THREE.MathUtils) {
+          useFrame((stateThree, delta) => {
+            if (!groupRef.current || !stateThree?.clock) return;
+
+            const target = state === TreeState.FORMED
+              ? new THREE.Vector3(0, targetY, 0)
+              : new THREE.Vector3(
+                  Math.sin(stateThree.clock.elapsedTime) * 5,
+                  5 + Math.cos(stateThree.clock.elapsedTime * 0.5) * 2,
+                  Math.cos(stateThree.clock.elapsedTime) * 5
+                );
+
+            if (groupRef.current.position.lerp) {
+              groupRef.current.position.lerp(target, delta * 2);
+            }
+
+            if (state === TreeState.FORMED) {
+              groupRef.current.rotation.y += delta * 0.5;
+              groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, delta);
+              groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, delta);
+            } else {
+              groupRef.current.rotation.x += delta;
+              groupRef.current.rotation.z += delta;
+            }
+          });
+        }
+
+        return React.createElement(
+          "group",
+          { ref: groupRef },
+          React.createElement(Rabbit, { scale: 0.8, isTopper: true })
+        );
+      };
+
+      // 核心体验组件
+      const Experience = () => {
+        const [treeState, setTreeState] = useState(TreeState.FORMED);
+
+        const onToggle = () => {
+          setTreeState(prev => prev === TreeState.FORMED ? TreeState.CHAOS : TreeState.FORMED);
+        };
+
+        // 兼容 Canvas 未定义的情况
+        if (!Canvas) {
+          return React.createElement("div", { style: { color: "white", textAlign: "center" } },
+            "3D 组件加载失败，请刷新页面重试"
+          );
+        }
+
+        return React.createElement(
+          Fragment,
+          null,
+          React.createElement(
+            Canvas,
+            {
+              shadows: true,
+              dpr: [1, 2],
+              camera: { position: [0, 0, 12], fov: 45 },
+              gl: { toneMapping: THREE.ReinhardToneMapping || 0, toneMappingExposure: 1.5 }
+            },
+            React.createElement("color", { attach: "background", args: ['#001a0f'] }),
+            // 轨道控制器
+            OrbitControls ? React.createElement(OrbitControls, {
+              enablePan: false,
+              enableZoom: true,
+              minPolarAngle: Math.PI / 4,
+              maxPolarAngle: Math.PI / 1.8,
+              minDistance: 6,
+              maxDistance: 20
+            }) : null,
+            // 环境与灯光
+            Environment ? React.createElement(Environment, { preset: "city" }) : null,
+            React.createElement("ambientLight", { intensity: 0.2, color: COLORS.emerald }),
+            React.createElement("spotLight", {
+              position: [10, 10, 10],
+              angle: 0.15,
+              penumbra: 1,
+              intensity: 2,
+              castShadow: true,
+              color: COLORS.champagne
+            }),
+            React.createElement("pointLight", { position: [-10, -5, -10], intensity: 5, color: COLORS.emerald }),
+            React.createElement("pointLight", { position: [0, 5, 5], intensity: 2, color: COLORS.gold, distance: 10 }),
+            // 背景元素
+            Stars ? React.createElement(Stars, { radius: 100, depth: 50, count: 5000, factor: 4, saturation: 0, fade: true, speed: 1 }) : null,
+            // 圣诞树
+            React.createElement(
+              "group",
+              { position: [0, -1, 0] },
+              React.createElement(TreeParticles, { state: treeState }),
+              React.createElement(TreeTopper, { state: treeState })
+            ),
+            // 特效
+            Sparkles ? React.createElement(Sparkles, {
+              count: 200,
+              scale: 12,
+              size: 4,
+              speed: 0.4,
+              opacity: 0.5,
+              color: COLORS.gold
+            }) : null,
+            // 地面反射
+            React.createElement(
+              "mesh",
+              { rotation: [-Math.PI / 2, 0, 0], position: [0, -4, 0] },
+              React.createElement("planeGeometry", { args: [100, 100] }),
+              React.createElement("meshStandardMaterial", {
+                color: "#001a0f",
+                roughness: 0,
+                metalness: 0.5,
+                transparent: true,
+                opacity: 0.8
+              })
+            ),
+            // 后期处理
+            EffectComposer ? React.createElement(
+              EffectComposer,
+              { disableNormalPass: true },
+              React.createElement(Bloom, {
+                luminanceThreshold: 0.8,
+                mipmapBlur: true,
+                intensity: 1.2,
+                radius: 0.6
+              }),
+              React.createElement(Vignette, { eskil: false, offset: 0.1, darkness: 1.1 }),
+              React.createElement(Noise, { opacity: 0.02 })
+            ) : null
+          ),
+          // 切换按钮
+          Html ? React.createElement(Html, { position: [0, -3, 0], transform: true },
+            React.createElement("button", {
+              onClick: onToggle,
+              className: "toggle-btn"
+            },
+            treeState === TreeState.FORMED ? "切换为混乱状态" : "切换为树形状态"
+            )
+          ) : React.createElement("button", {
             onClick: onToggle,
-            className: "toggle-btn"
+            className: "toggle-btn",
+            style: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, 50%)" }
           },
             treeState === TreeState.FORMED ? "切换为混乱状态" : "切换为树形状态"
           )
-        )
-      );
-    };
+        );
+      };
 
-    // 渲染组件
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(
-      React.createElement(React.StrictMode, null,
-        React.createElement(Experience, null)
-      )
-    );
+      // 渲染组件
+      const rootElement = document.getElementById('root');
+      if (ReactDOM.createRoot && rootElement) {
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+          React.createElement(StrictMode, null,
+            React.createElement(Experience, null)
+          )
+        );
+      }
+    });
   </script>
 </body>
 </html>
